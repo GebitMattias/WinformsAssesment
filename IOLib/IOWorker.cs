@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using IOLib.Model;
 
 namespace IOLib;
@@ -13,41 +16,68 @@ public sealed class IOWorker
 
     public IOWorker(string path)
     {
-        
+
     }
 
     /// <summary>
     /// Get Persons
     /// </summary>
     /// <exception cref="IOException">IO might fail rarely</exception>
-    public IEnumerable<Person> GetPersons()
+    /// Exceptions are not handled within this task, because they will handeld by the calling Method
+    public Task<IEnumerable<Person>> GetPersons(CancellationTokenSource cts)
     {
-        var random = new Random();
+        CancellationToken ct = cts.Token;
 
-        // Simulate it sometimes failing
-        if (random.Next(10_000) <= 5) throw new IOException();
 
-        // Simulate some work
-        Thread.Sleep(random.Next(5000, 10000));
+        return Task.Run(() =>
+        {
+            //Check if already cancelled
+            ct.ThrowIfCancellationRequested();
 
-        return this._generator.GeneratePersons();
+            var random = new Random();
+
+            // Simulate it sometimes failing
+            if (random.Next(10_000) <= 5) throw new IOException();
+
+            // Simulate some work
+            Thread.Sleep(random.Next(5000, 10000));
+
+            //Check if User cancelled Now, should be within the work
+            if (ct.IsCancellationRequested) { ct.ThrowIfCancellationRequested(); }
+
+            return this._generator.GeneratePersons();
+        }, ct);
+
     }
 
     /// <summary>
     /// Get Addresses
     /// </summary>
     /// <exception cref="IOException">IO might fail rarely</exception>
-    public IEnumerable<Address> GetAddresses()
+    /// Exceptions are not handled within this task, because they will handeld by the calling Method
+    public Task<IEnumerable<Address>> GetAddresses(CancellationTokenSource cts)
     {
-        var random = new Random();
+        CancellationToken ct = cts.Token;
 
-        // Simulate it sometimes failing
-        if (random.Next(10_000) <= 5) throw new IOException();
+        return Task.Run(() =>
+        {
+            //Check if already cancelled
+            ct.ThrowIfCancellationRequested();
 
-        // Simulate some work
-        Thread.Sleep(random.Next(5000, 10000));
+            var random = new Random();
 
-        return this._generator.GenerateAddresses();
+            // Simulate it sometimes failing
+            if (random.Next(10_000) <= 5) throw new IOException();
+
+            // Simulate some work
+            Thread.Sleep(random.Next(5000, 10000));
+
+            //Check if User cancelled Now, should be within the work
+            if (ct.IsCancellationRequested) { ct.ThrowIfCancellationRequested(); }
+
+
+            return this._generator.GenerateAddresses();
+        }, ct);
     }
 
 }
